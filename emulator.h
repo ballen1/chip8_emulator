@@ -17,19 +17,20 @@ public:
 
     bool load_program(std::string program);
 
-    void fetch_opcode();
+    void cycle();
 
 private:
     uint8_t mem[EMULATOR_MEMORY_SIZE];
-
     uint8_t vx[EMULATOR_DATA_REGISTERS];
     uint16_t ix; 
-
     uint8_t stack[EMULATOR_STACK_SIZE];
-
     uint16_t pc;
-
     uint16_t opcode;
+    uint8_t opcode_nibbles[4];
+    
+    void fetch_opcode();
+    void decode_opcode();
+    void execute_op();
 };
 
 #endif

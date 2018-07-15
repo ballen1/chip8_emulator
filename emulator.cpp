@@ -6,6 +6,12 @@
 emulator::emulator()
 {
     memset(mem, 0, EMULATOR_MEMORY_SIZE);
+    memset(vx, 0, EMULATOR_DATA_REGISTERS);
+    memset(stack, 0, EMULATOR_STACK_SIZE);
+    
+    ix = 0;
+
+    pc = 512;
 }
 
 emulator::~emulator()
@@ -31,4 +37,10 @@ emulator::load_program(std::string program)
 
     std::cerr << program << " does not exist" << std::endl;
     return false;
+}
+
+void
+emulator::fetch_opcode()
+{
+    opcode = (mem[pc] << 8) | mem[pc+1];
 }

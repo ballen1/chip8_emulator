@@ -10,21 +10,13 @@ emulator::emulator()
     memset(stack, 0, EMULATOR_STACK_SIZE);
     
     ix = 0;
-
+    sp = 0;
     pc = 512;
 }
 
 emulator::~emulator()
 {
 
-}
-
-void
-emulator::cycle()
-{
-    fetch_opcode();
-    decode_opcode();
-    execute_op();
 }
 
 bool
@@ -48,28 +40,43 @@ emulator::load_program(std::string program)
 }
 
 void
-emulator::fetch_opcode()
+emulator::cycle()
 {
-    opcode = (mem[pc] << 8) | mem[pc+1];
+    fetch_opcode();
+    execute_op();
 }
 
 void
-emulator::decode_opcode()
+emulator::print_opcode()
 {
-    opcode_nibbles[3] = opcode >> 12;
-    opcode_nibbles[2] = (opcode & 0x0FFF) >> 8;
-    opcode_nibbles[1] = (opcode & 0x00FF) >> 4;
-    opcode_nibbles[0] = (opcode & 0x000F);
+    std::cout << "Opcode : " << std::hex << opcode << std::dec << std::endl;
+}
+
+void
+emulator::increment_pc()
+{
+    pc += 2;
+}
+
+void
+emulator::fetch_opcode()
+{
+    opcode = (mem[pc] << 8) | mem[pc+1];
+    increment_pc();
 }
 
 void
 emulator::execute_op()
 {
-    switch (opcode_nibbles[3])
+    switch (opcode >> 12)
     {
         case 0:
         {
-
+            if (opcode == 0x00EE)
+            {
+                sp -= 1;
+                pc = stack[sp];
+            }
         } break;
         case 1:
         {
@@ -77,7 +84,9 @@ emulator::execute_op()
         } break;
         case 2:
         {
-
+            stack[sp] = pc;
+            sp += 1;
+            pc = opcode & 0x0FFF;
         } break;
         case 3:
         {
@@ -93,11 +102,13 @@ emulator::execute_op()
         } break;
         case 6:
         {
-
+            uint8_t reg = (opcode & 0x0F00) >> 8;
+            vx[reg] = (opcode & 0xFF);
         } break;
         case 7:
         {
-
+            uint8_t reg = (opcode & 0x0F00) >> 8;
+            vx[reg] += (opcode & 0xFF);
         } break;
         case 8:
         {
@@ -109,7 +120,7 @@ emulator::execute_op()
         } break;
         case 10:
         {
-
+            ix = opcode & 0x0FFF;
         } break;
         case 11:
         {
@@ -133,7 +144,9 @@ emulator::execute_op()
         } break;
         default:
         {
-
+            std::cerr << "Unsupported opcode fetched" << std::endl; 
         } break;
     }
 }
+
+

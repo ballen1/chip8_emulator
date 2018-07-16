@@ -11,6 +11,7 @@ emulator::emulator()
     memset(vx, 0, EMULATOR_DATA_REGISTERS);
     memset(stack, 0, EMULATOR_STACK_SIZE);
     memset(display, 0, EMULATOR_DISPLAY_WIDTH * EMULATOR_DISPLAY_HEIGHT);
+    memset(inputs, 0, EMULATOR_INPUT_TOTAL);
     
     ix = 0;
     sp = 0;
@@ -174,13 +175,26 @@ emulator::execute_op()
         } break;
         case 8:
         {
-            std::cerr << "Case 8 not implemented" << std::endl;
-            error = true;
+            if ((opcode & 0xF) == 0)
+            {
+                uint8_t reg_x = (opcode & 0x0F00) >> 8;
+                uint8_t reg_y = (opcode & 0x00F0) >> 4;
+                vx[reg_x] = vx[reg_y];
+            }
+            else
+            {
+                std::cerr << "Case 8 not implemented" << std::endl;
+                error = true;
+            }
         } break;
         case 9:
         {
-            std::cerr << "Case 9 not implemented" << std::endl;
-            error = true;
+            uint8_t reg_x = (opcode & 0x0F00) >> 8;
+            uint8_t reg_y = (opcode & 0x00F0) >> 4;
+            if (vx[reg_x] != vx[reg_y])
+            {
+                increment_pc();
+            }
         } break;
         case 10:
         {
@@ -205,6 +219,8 @@ emulator::execute_op()
             uint8_t x = vx[(opcode & 0x0F00) >> 8];
             uint8_t y = vx[(opcode & 0x00F0) >> 4];
 
+            bool collision = false;
+
             for (int r = 0; r < bytes; r++)
             {
                 uint8_t col = mem[ix + r];
@@ -215,20 +231,46 @@ emulator::execute_op()
                     display[x + col_num][y + r] = (display[x + col_num][y + r]) ^ ((bool)(col & mask));
                     if (prev == 1 && display[x + col_num][y + r] == 0)
                     {
-                        vx[EMULATOR_VF_REGISTER] = 1;
+                        collision = true;
                     }
                     mask *= 2;
                 }
             }
+
+            vx[EMULATOR_VF_REGISTER] = collision;
         } break;
         case 14:
         {
-            std::cerr << "Case E not implemented" << std::endl;
-            error = true;
+            if ((opcode & 0xFF) == 0x9E)
+            {
+                uint8_t reg = (opcode & 0x0F00) >> 8;
+                if (inputs[vx[reg]] == 1)
+                {
+                    increment_pc();
+                }
+            }
+            else if ((opcode & 0xFF) == 0xA1)
+            {
+                uint8_t reg = (opcode & 0x0F00) >> 8;
+                if (inputs[vx[reg]] == 0)
+                {
+                    increment_pc();
+                }
+            }
+            else
+            {
+                std::cerr << "Case E not implemented" << std::endl;
+                error = true;
+            }
         } break;
         case 15:
         {
-            if ((opcode & 0xFF) == 0x15)
+            if ((opcode & 0xFF) == 0x07)
+            {
+                uint8_t reg = (opcode & 0x0F00) >> 8;
+                vx[reg] = dt;
+            }
+            else if ((opcode & 0xFF) == 0x15)
             {
                 uint8_t reg = (opcode & 0x0F00) >> 8;
                 dt = vx[reg];

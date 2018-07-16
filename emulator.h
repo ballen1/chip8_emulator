@@ -11,6 +11,7 @@
 #define EMULATOR_DISPLAY_WIDTH 64 
 #define EMULATOR_DISPLAY_HEIGHT 32
 #define EMULATOR_VF_REGISTER 15
+#define EMULATOR_INPUT_TOTAL 16
 
 class emulator
 {
@@ -39,6 +40,7 @@ private:
     bool display[EMULATOR_DISPLAY_WIDTH][EMULATOR_DISPLAY_HEIGHT];
     uint8_t dt;
     uint8_t st;
+    bool inputs[EMULATOR_INPUT_TOTAL];
 
     bool error;
 

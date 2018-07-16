@@ -10,6 +10,7 @@
 #define EMULATOR_STACK_SIZE 48
 #define EMULATOR_DISPLAY_WIDTH 64 
 #define EMULATOR_DISPLAY_HEIGHT 32
+#define EMULATOR_VF_REGISTER 15
 
 class emulator
 {
@@ -20,6 +21,9 @@ public:
     bool load_program(std::string program);
 
     void cycle();
+    void tick_timers();
+
+    bool error_flag();
 
     void print_opcode();
     void print_display();
@@ -33,6 +37,10 @@ private:
     uint16_t pc;
     uint16_t opcode;
     bool display[EMULATOR_DISPLAY_WIDTH][EMULATOR_DISPLAY_HEIGHT];
+    uint8_t dt;
+    uint8_t st;
+
+    bool error;
 
     void increment_pc();
 

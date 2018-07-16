@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
+#include <ctime>
 
 emulator::emulator()
 {
@@ -13,6 +15,11 @@ emulator::emulator()
     ix = 0;
     sp = 0;
     pc = 512;
+
+    dt = 0;
+    st = 0;
+
+    error = false;
 }
 
 emulator::~emulator()
@@ -45,6 +52,26 @@ emulator::cycle()
 {
     fetch_opcode();
     execute_op();
+}
+
+void
+emulator::tick_timers()
+{
+    if (dt > 0)
+    {
+        dt--;
+    }
+
+    if (st > 0)
+    {
+        st--;
+    }
+}
+
+bool
+emulator::error_flag()
+{
+    return error;
 }
 
 void
@@ -98,6 +125,11 @@ emulator::execute_op()
                 sp -= 1;
                 pc = stack[sp];
             }
+            else
+            {
+                std::cerr << "0 case not implemented" << std::endl;
+                error = true;
+            }
         } break;
         case 1:
         {
@@ -119,11 +151,16 @@ emulator::execute_op()
         } break;
         case 4:
         {
-
+            uint8_t reg = (opcode & 0x0F00) >> 8;
+            if (vx[reg] != (opcode & 0x00FF))
+            {
+                increment_pc();
+            }
         } break;
         case 5:
         {
-
+            std::cerr << "Case 5 not implemented" << std::endl;
+            error = true;
         } break;
         case 6:
         {
@@ -137,11 +174,13 @@ emulator::execute_op()
         } break;
         case 8:
         {
-
+            std::cerr << "Case 8 not implemented" << std::endl;
+            error = true;
         } break;
         case 9:
         {
-
+            std::cerr << "Case 9 not implemented" << std::endl;
+            error = true;
         } break;
         case 10:
         {
@@ -149,12 +188,16 @@ emulator::execute_op()
         } break;
         case 11:
         {
-
+            std::cerr << "Case B not implemented" << std::endl;
+            error = true;
         } break;
         case 12:
         {
-            // TODO:
             uint8_t reg = (opcode & 0x0F00) >> 8; 
+            std::srand(std::time(nullptr));
+            uint8_t rand_num = static_cast<uint8_t>(std::rand());
+            uint8_t kk = opcode & 0xFF;
+            vx[reg] = rand_num & kk;
         } break;
         case 13:
         {
@@ -168,18 +211,38 @@ emulator::execute_op()
                 int mask = 1;
                 for (int col_num = 7; col_num >= 0; col_num--)
                 {
-                    display[x + col_num][y + r] = (col & mask);
+                    uint8_t prev = display[x + col_num][y + r];
+                    display[x + col_num][y + r] = (display[x + col_num][y + r]) ^ ((bool)(col & mask));
+                    if (prev == 1 && display[x + col_num][y + r] == 0)
+                    {
+                        vx[EMULATOR_VF_REGISTER] = 1;
+                    }
                     mask *= 2;
                 }
             }
         } break;
         case 14:
         {
-
+            std::cerr << "Case E not implemented" << std::endl;
+            error = true;
         } break;
         case 15:
         {
-
+            if ((opcode & 0xFF) == 0x15)
+            {
+                uint8_t reg = (opcode & 0x0F00) >> 8;
+                dt = vx[reg];
+            }
+            else if ((opcode & 0xFF) == 0x1E)
+            {
+                uint8_t reg = (opcode & 0x0F00) >> 8;
+                ix += vx[reg];
+            }
+            else
+            {
+                std::cerr << "Case F not implemented" << std::endl;
+                error = true;
+            }
         } break;
         default:
         {

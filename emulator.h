@@ -22,6 +22,7 @@ public:
     void cycle();
 
     void print_opcode();
+    void print_display();
 
 private:
     uint8_t mem[EMULATOR_MEMORY_SIZE];

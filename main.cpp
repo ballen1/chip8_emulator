@@ -13,6 +13,7 @@ int main()
         {
             ch8.cycle();
             ch8.print_opcode();
+            ch8.print_display();
         }
     }
 

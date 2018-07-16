@@ -8,6 +8,7 @@ emulator::emulator()
     memset(mem, 0, EMULATOR_MEMORY_SIZE);
     memset(vx, 0, EMULATOR_DATA_REGISTERS);
     memset(stack, 0, EMULATOR_STACK_SIZE);
+    memset(display, 0, EMULATOR_DISPLAY_WIDTH * EMULATOR_DISPLAY_HEIGHT);
     
     ix = 0;
     sp = 0;
@@ -53,6 +54,26 @@ emulator::print_opcode()
 }
 
 void
+emulator::print_display()
+{
+    for (int y = 0; y < EMULATOR_DISPLAY_HEIGHT; y++)
+    {
+        for (int x = 0; x < EMULATOR_DISPLAY_WIDTH; x++)
+        {
+            if (display[x][y])
+            {
+                std::cout << "*";
+            }
+            else
+            {
+                std::cout << "-";
+            }
+        }
+        std::cout << std::endl;
+    }
+}
+
+void
 emulator::increment_pc()
 {
     pc += 2;
@@ -80,7 +101,7 @@ emulator::execute_op()
         } break;
         case 1:
         {
-
+            pc = opcode & 0x0FFF;
         } break;
         case 2:
         {
@@ -90,7 +111,11 @@ emulator::execute_op()
         } break;
         case 3:
         {
-
+            uint8_t reg = (opcode & 0x0F00) >> 8;
+            if (vx[reg] == (opcode & 0x00FF))
+            {
+                increment_pc();
+            }
         } break;
         case 4:
         {
@@ -128,11 +153,25 @@ emulator::execute_op()
         } break;
         case 12:
         {
-
+            // TODO:
+            uint8_t reg = (opcode & 0x0F00) >> 8; 
         } break;
         case 13:
         {
+            uint8_t bytes = opcode & 0xF;
+            uint8_t x = vx[(opcode & 0x0F00) >> 8];
+            uint8_t y = vx[(opcode & 0x00F0) >> 4];
 
+            for (int r = 0; r < bytes; r++)
+            {
+                uint8_t col = mem[ix + r];
+                int mask = 1;
+                for (int col_num = 7; col_num >= 0; col_num--)
+                {
+                    display[x + col_num][y + r] = (col & mask);
+                    mask *= 2;
+                }
+            }
         } break;
         case 14:
         {

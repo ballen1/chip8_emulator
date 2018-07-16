@@ -9,6 +9,7 @@ int main()
         while (!ch8.error_flag())
         {
             ch8.cycle();
+            ch8.tick_timers();
             ch8.print_opcode();
             ch8.print_display();
         }

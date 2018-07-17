@@ -70,6 +70,12 @@ emulator::tick_timers()
 }
 
 bool
+emulator::get_display_pixel(int x, int y)
+{
+    return display[x][y];
+}
+
+bool
 emulator::error_flag()
 {
     return error;

@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
         window = SDL_CreateWindow("Chip 8",
                                   SDL_WINDOWPOS_CENTERED,
                                   SDL_WINDOWPOS_CENTERED,
-                                  800, 800,
+                                  640, 320,
                                   0);
 
         if (window == nullptr)
@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
             return -1;
         }
 
-        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888,
+        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
                                     SDL_TEXTUREACCESS_STREAMING, 
                                     EMULATOR_DISPLAY_WIDTH,
                                     EMULATOR_DISPLAY_HEIGHT);
@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
                 ch8.cycle();
                 ch8.tick_timers();
                 ch8.print_opcode();
-                ch8.print_display();
+                //ch8.print_display();
             }
             else
             {
@@ -79,6 +79,28 @@ int main(int argc, char* argv[])
             }
 
             SDL_RenderClear(renderer);
+
+            uint32_t pixels[2048]; 
+            int pixel_indx = 0;
+            for (int r = 0; r < EMULATOR_DISPLAY_HEIGHT; r++)
+            {
+                for (int c = 0; c < EMULATOR_DISPLAY_WIDTH; c++)
+                {
+                    if (ch8.get_display_pixel(c, r))
+                    {
+                        pixels[pixel_indx] = 0xFFFFFFFF; 
+                    }
+                    else
+                    {
+                        pixels[pixel_indx] = 0xFF000000;
+                    }
+
+                    pixel_indx++;
+                }
+            }
+
+            SDL_UpdateTexture(texture, nullptr, pixels, (64*4)); 
+
             SDL_RenderCopy(renderer, texture, nullptr, nullptr);
             SDL_RenderPresent(renderer);
         }

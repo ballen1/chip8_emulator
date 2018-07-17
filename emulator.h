@@ -24,6 +24,8 @@ public:
     void cycle();
     void tick_timers();
 
+    bool get_display_pixel(int x, int y);
+
     bool error_flag();
 
     void print_opcode();

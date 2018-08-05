@@ -5,6 +5,26 @@
 #include <cstdlib>
 #include <ctime>
 
+uint8_t font[80] =
+{
+    0xF0, 0x90, 0x90, 0x90, 0xF0,
+    0x20, 0x60, 0x20, 0x20, 0x70,
+    0xF0, 0x10, 0xF0, 0x80, 0xF0,
+    0xF0, 0x10, 0xF0, 0x10, 0xF0,
+    0x90, 0x90, 0xF0, 0x10, 0x10,
+    0xF0, 0x80, 0xF0, 0x10, 0xF0,
+    0xF0, 0x80, 0xF0, 0x90, 0xF0,
+    0xF0, 0x10, 0x20, 0x40, 0x40,
+    0xF0, 0x90, 0xF0, 0x90, 0xF0,
+    0xF0, 0x90, 0xF0, 0x10, 0xF0,
+    0xF0, 0x90, 0xF0, 0x90, 0x90,
+    0xE0, 0x90, 0xE0, 0x90, 0xE0,
+    0xF0, 0x80, 0x80, 0x80, 0xF0,
+    0xE0, 0x90, 0x90, 0x90, 0xE0,
+    0xF0, 0x80, 0xF0, 0x80, 0xF0,
+    0xF0, 0x80, 0xF0, 0x80, 0x80
+};
+
 emulator::emulator()
 {
     memset(mem, 0, EMULATOR_MEMORY_SIZE);
@@ -21,6 +41,13 @@ emulator::emulator()
     st = 0;
 
     error = false;
+    draw_flag = false;
+
+    // Load fonts into memory
+    for (int i = 0; i < 80; i++)
+    {
+        mem[i] = font[i]; 
+    }
 }
 
 emulator::~emulator()
@@ -51,6 +78,7 @@ emulator::load_program(std::string program)
 void
 emulator::cycle()
 {
+    draw_flag = false;
     fetch_opcode();
     execute_op();
 }
@@ -67,6 +95,18 @@ emulator::tick_timers()
     {
         st--;
     }
+}
+
+void
+emulator::set_key_down(uint8_t key)
+{
+    inputs[key] = 1;
+}
+
+void
+emulator::set_key_up(uint8_t key)
+{
+    inputs[key] = 0;
 }
 
 bool
@@ -105,6 +145,12 @@ emulator::print_display()
         }
         std::cout << std::endl;
     }
+}
+
+bool
+emulator::needs_draw()
+{
+    return draw_flag;
 }
 
 void
@@ -187,6 +233,44 @@ emulator::execute_op()
                 uint8_t reg_y = (opcode & 0x00F0) >> 4;
                 vx[reg_x] = vx[reg_y];
             }
+            else if ((opcode & 0xF) == 2)
+            {
+                uint8_t reg_x = (opcode & 0x0F00) >> 8;
+                uint8_t reg_y = (opcode & 0x00F0) >> 4;
+                vx[reg_x] = vx[reg_x] & vx[reg_y];
+            }
+            else if ((opcode & 0xF) == 4)
+            {
+                uint8_t reg_x = (opcode & 0x0F00) >> 8;
+                uint8_t reg_y = (opcode & 0x00F0) >> 4;
+                uint16_t sum = vx[reg_x] + vx[reg_y];
+                vx[reg_x] = (sum & 0xFF);
+                
+                if (sum > 0xFF)
+                {
+                    vx[15] = 1;
+                }
+                else
+                {
+                    vx[15] = 0;
+                }
+            }
+            else if ((opcode & 0xF) == 5)
+            {
+                uint8_t reg_x = (opcode & 0x0F00) >> 8;
+                uint8_t reg_y = (opcode & 0x00F0) >> 4;
+                
+                if (vx[reg_x] > vx[reg_y])
+                {
+                    vx[15] = 1;
+                }
+                else
+                {
+                    vx[15] = 0;
+                }
+
+                vx[reg_x] -= vx[reg_y];
+            }
             else
             {
                 std::cerr << "Case 8 not implemented" << std::endl;
@@ -221,6 +305,7 @@ emulator::execute_op()
         } break;
         case 13:
         {
+            draw_flag = true;
             uint8_t bytes = opcode & 0xF;
             uint8_t x = vx[(opcode & 0x0F00) >> 8];
             uint8_t y = vx[(opcode & 0x00F0) >> 4];
@@ -271,20 +356,44 @@ emulator::execute_op()
         } break;
         case 15:
         {
+            uint8_t reg = (opcode & 0x0F00) >> 8;
             if ((opcode & 0xFF) == 0x07)
             {
-                uint8_t reg = (opcode & 0x0F00) >> 8;
                 vx[reg] = dt;
             }
             else if ((opcode & 0xFF) == 0x15)
             {
-                uint8_t reg = (opcode & 0x0F00) >> 8;
                 dt = vx[reg];
+            }
+            else if ((opcode & 0xFF) == 0x18)
+            {
+                st = vx[reg]; 
             }
             else if ((opcode & 0xFF) == 0x1E)
             {
-                uint8_t reg = (opcode & 0x0F00) >> 8;
                 ix += vx[reg];
+            }
+            else if ((opcode & 0xFF) == 0x29)
+            {
+                ix = vx[reg] * EMULATOR_SPRITE_FONT_BYTES;
+            }
+            else if ((opcode & 0xFF) == 0x33)
+            {
+                uint8_t val = vx[reg];
+                mem[ix] = val / 100;
+                val -= (val / 100);
+                mem[ix + 1] = val / 10;
+                val -= (val / 10);
+                mem[ix + 2] = val;
+            }
+            else if ((opcode & 0xFF) == 0x65)
+            {
+                uint16_t mem_loc = ix;
+                for (int i = 0; i < reg; i++)
+                {
+                    vx[i] = mem[mem_loc++]; 
+                }
+                ix = mem_loc;
             }
             else
             {
@@ -295,6 +404,7 @@ emulator::execute_op()
         default:
         {
             std::cerr << "Unsupported opcode fetched" << std::endl; 
+            error = true;
         } break;
     }
 }

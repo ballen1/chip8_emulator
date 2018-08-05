@@ -12,6 +12,7 @@
 #define EMULATOR_DISPLAY_HEIGHT 32
 #define EMULATOR_VF_REGISTER 15
 #define EMULATOR_INPUT_TOTAL 16
+#define EMULATOR_SPRITE_FONT_BYTES 5
 
 class emulator
 {
@@ -24,12 +25,17 @@ public:
     void cycle();
     void tick_timers();
 
+    void set_key_down(uint8_t key);
+    void set_key_up(uint8_t key);
+
     bool get_display_pixel(int x, int y);
 
     bool error_flag();
 
     void print_opcode();
     void print_display();
+
+    bool needs_draw();
 
 private:
     uint8_t mem[EMULATOR_MEMORY_SIZE];
@@ -43,6 +49,7 @@ private:
     uint8_t dt;
     uint8_t st;
     bool inputs[EMULATOR_INPUT_TOTAL];
+    bool draw_flag;
 
     bool error;
 

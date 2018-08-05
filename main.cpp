@@ -4,6 +4,26 @@
 
 #include "SDL2/SDL.h"
 
+SDL_Keycode Keys[16] = 
+{
+    SDLK_1,
+    SDLK_2,
+    SDLK_3,
+    SDLK_4,
+    SDLK_q,
+    SDLK_w,
+    SDLK_e,
+    SDLK_r,
+    SDLK_a,
+    SDLK_s,
+    SDLK_d,
+    SDLK_f,
+    SDLK_z,
+    SDLK_x,
+    SDLK_c,
+    SDLK_v
+};
+
 int main(int argc, char* argv[])
 {
     emulator ch8;
@@ -11,7 +31,7 @@ int main(int argc, char* argv[])
     SDL_Renderer* renderer = nullptr;
     SDL_Texture* texture = nullptr;
 
-    if (ch8.load_program("C:\\Users\\brandona\\Desktop\\white_noise\\games\\tetris.c8"))
+    if (ch8.load_program("C:\\Users\\brandona\\Desktop\\white_noise\\games\\pong2.c8"))
     {
         if (SDL_Init(SDL_INIT_AUDIO|SDL_INIT_VIDEO) != 0)
         {
@@ -63,6 +83,28 @@ int main(int argc, char* argv[])
                 {
                     quit = true;
                 }
+
+                if (e.type == SDL_KEYDOWN)
+                {
+                    for (int i = 0; i < 16; i++)
+                    {
+                        if (e.key.keysym.sym == Keys[i])
+                        {
+                            ch8.set_key_down(i);
+                        }
+                    }
+                }
+
+                if (e.type == SDL_KEYUP)
+                {
+                    for (int i = 0; i < 16; i++)
+                    {
+                        if (e.key.keysym.sym == Keys[i])
+                        {
+                            ch8.set_key_up(i);
+                        }
+                    }
+                }
             }
 
             if (!ch8.error_flag())
@@ -78,31 +120,34 @@ int main(int argc, char* argv[])
                 return -1;
             }
 
-            SDL_RenderClear(renderer);
-
-            uint32_t pixels[2048]; 
-            int pixel_indx = 0;
-            for (int r = 0; r < EMULATOR_DISPLAY_HEIGHT; r++)
+            if (ch8.needs_draw())
             {
-                for (int c = 0; c < EMULATOR_DISPLAY_WIDTH; c++)
+                SDL_RenderClear(renderer);
+
+                uint32_t pixels[2048]; 
+                int pixel_indx = 0;
+                for (int r = 0; r < EMULATOR_DISPLAY_HEIGHT; r++)
                 {
-                    if (ch8.get_display_pixel(c, r))
+                    for (int c = 0; c < EMULATOR_DISPLAY_WIDTH; c++)
                     {
-                        pixels[pixel_indx] = 0xFFFFFFFF; 
-                    }
-                    else
-                    {
-                        pixels[pixel_indx] = 0xFF000000;
-                    }
+                        if (ch8.get_display_pixel(c, r))
+                        {
+                            pixels[pixel_indx] = 0xFFFFFFFF; 
+                        }
+                        else
+                        {
+                            pixels[pixel_indx] = 0xFF000000;
+                        }
 
-                    pixel_indx++;
+                        pixel_indx++;
+                    }
                 }
+
+                SDL_UpdateTexture(texture, nullptr, pixels, (64*4)); 
+
+                SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+                SDL_RenderPresent(renderer);
             }
-
-            SDL_UpdateTexture(texture, nullptr, pixels, (64*4)); 
-
-            SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-            SDL_RenderPresent(renderer);
         }
     }
 

@@ -50,6 +50,8 @@ private:
     uint8_t st;
     bool inputs[EMULATOR_INPUT_TOTAL];
     bool draw_flag;
+    bool waiting_for_input;
+    uint8_t input_slot;
 
     bool error;
 

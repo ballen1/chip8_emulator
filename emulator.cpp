@@ -42,6 +42,8 @@ emulator::emulator()
 
     error = false;
     draw_flag = false;
+    waiting_for_input = false;
+    input_slot = 0;
 
     // Load fonts into memory
     for (int i = 0; i < 80; i++)
@@ -78,9 +80,12 @@ emulator::load_program(std::string program)
 void
 emulator::cycle()
 {
-    draw_flag = false;
-    fetch_opcode();
-    execute_op();
+    if (!waiting_for_input)
+    {
+        draw_flag = false;
+        fetch_opcode();
+        execute_op();
+    }
 }
 
 void
@@ -101,6 +106,12 @@ void
 emulator::set_key_down(uint8_t key)
 {
     inputs[key] = 1;
+
+    if (waiting_for_input)
+    {
+        waiting_for_input = false;
+        vx[input_slot] = key;
+    }
 }
 
 void
@@ -188,6 +199,11 @@ emulator::execute_op()
                 sp -= 1;
                 pc = stack[sp];
             }
+            else
+            {
+                std::cerr << "Case 0 not implemented" << std::endl;
+                error = true;
+            }
         } break;
         case 1:
         {
@@ -239,11 +255,24 @@ emulator::execute_op()
                 uint8_t reg_y = (opcode & 0x00F0) >> 4;
                 vx[reg_x] = vx[reg_y];
             }
+            else if (cmd == 1)
+            {
+                uint8_t reg_x = (opcode & 0x0F00) >> 8;
+                uint8_t reg_y = (opcode & 0x00F0) >> 4;
+                vx[reg_x] = (vx[reg_x] | vx[reg_y]);
+            }
             else if (cmd == 2)
             {
                 uint8_t reg_x = (opcode & 0x0F00) >> 8;
                 uint8_t reg_y = (opcode & 0x00F0) >> 4;
                 vx[reg_x] = vx[reg_x] & vx[reg_y];
+            }
+            else if (cmd == 3)
+            {
+                uint8_t reg_x = (opcode & 0x0F00) >> 8;
+                uint8_t reg_y = (opcode & 0x00F0) >> 4;
+
+                vx[reg_x] = (vx[reg_x] ^ vx[reg_y]);
             }
             else if (cmd == 4)
             {
@@ -276,6 +305,20 @@ emulator::execute_op()
                 }
 
                 vx[reg_x] -= vx[reg_y];
+            }
+            else if (cmd == 6)
+            {
+                uint8_t reg_x = (opcode & 0x0F00) >> 8;
+
+                vx[0xF] = (vx[reg_x] & 0x1);
+                vx[reg_x] >>= 1;
+            }
+            else if (cmd == 0xE)
+            {
+                uint8_t reg_x = (opcode & 0x0F00) >> 8;
+
+                vx[0xF] = (vx[reg_x] & 0x80);
+                vx[reg_x] <<= 1;
             }
             else
             {
@@ -367,6 +410,11 @@ emulator::execute_op()
             {
                 vx[reg] = dt;
             }
+            else if ((opcode & 0xFF) == 0x0A)
+            {
+                waiting_for_input = true; 
+                input_slot = reg;
+            }
             else if ((opcode & 0xFF) == 0x15)
             {
                 dt = vx[reg];
@@ -396,14 +444,14 @@ emulator::execute_op()
             {
                 for (int i = 0; i <= reg; i++)
                 {
-                    mem[ix + i] = vx[i];
+                    mem[ix++] = vx[i];
                 }
             }
             else if ((opcode & 0xFF) == 0x65)
             {
                 for (int i = 0; i <= reg; i++)
                 {
-                    vx[i] = mem[ix + i]; 
+                    vx[i] = mem[ix++]; 
                 }
             }
             else

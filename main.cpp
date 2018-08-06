@@ -1,6 +1,8 @@
 #include "emulator.h"
 
 #include <iostream>
+#include <chrono>
+#include <thread>
 
 #include "SDL2/SDL.h"
 
@@ -31,7 +33,7 @@ int main(int argc, char* argv[])
     SDL_Renderer* renderer = nullptr;
     SDL_Texture* texture = nullptr;
 
-    if (ch8.load_program("C:\\Users\\brandona\\Desktop\\white_noise\\games\\INVADERS"))
+    if (ch8.load_program("C:\\Users\\brandona\\Desktop\\white_noise\\games\\PONG2"))
     {
         if (SDL_Init(SDL_INIT_AUDIO|SDL_INIT_VIDEO) != 0)
         {
@@ -75,8 +77,17 @@ int main(int argc, char* argv[])
         SDL_Event e;
         bool quit = false;
 
+        // Initialize to a value that will cause the first frame to cycle
+        float time_elapsed_us = 2000;
+
+        auto begin = std::chrono::high_resolution_clock::now();
+        auto end = std::chrono::high_resolution_clock::now();
+
         while (!quit)
         {
+            begin = std::chrono::high_resolution_clock::now();
+            auto duration = begin - end;
+            time_elapsed_us += std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
             while (SDL_PollEvent(&e))
             {
                 if (e.type == SDL_QUIT)
@@ -109,9 +120,13 @@ int main(int argc, char* argv[])
 
             if (!ch8.error_flag())
             {
-                ch8.cycle();
-                //ch8.print_opcode();
-                //ch8.print_display();
+                if (time_elapsed_us >= 1667)
+                {
+                    ch8.cycle();
+                    //ch8.print_opcode();
+                    //ch8.print_display();
+                    time_elapsed_us = 0;
+                }
             }
             else
             {
@@ -143,11 +158,11 @@ int main(int argc, char* argv[])
                 }
 
                 SDL_UpdateTexture(texture, nullptr, pixels, (64*4)); 
-
                 SDL_RenderCopy(renderer, texture, nullptr, nullptr);
                 SDL_RenderPresent(renderer);
-                SDL_Delay(12);
             }
+            end = std::chrono::high_resolution_clock::now();
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
         }
     }
 

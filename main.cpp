@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
     SDL_Renderer* renderer = nullptr;
     SDL_Texture* texture = nullptr;
 
-    if (ch8.load_program("C:\\Users\\brandona\\Desktop\\white_noise\\games\\pong2.c8"))
+    if (ch8.load_program("C:\\Users\\brandona\\Desktop\\white_noise\\games\\invaders.c8"))
     {
         if (SDL_Init(SDL_INIT_AUDIO|SDL_INIT_VIDEO) != 0)
         {

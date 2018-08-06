@@ -173,15 +173,20 @@ emulator::execute_op()
     {
         case 0:
         {
-            if (opcode == 0x00EE)
+            if (opcode == 0x00E0)
+            {
+                for (int w = 0; w < EMULATOR_DISPLAY_WIDTH; w++)
+                {
+                    for (int h = 0; h < EMULATOR_DISPLAY_HEIGHT; h++)
+                    {
+                        display[w][h] = 0;
+                    }
+                }
+            }
+            else if (opcode == 0x00EE)
             {
                 sp -= 1;
                 pc = stack[sp];
-            }
-            else
-            {
-                std::cerr << "0 case not implemented" << std::endl;
-                error = true;
             }
         } break;
         case 1:
@@ -227,24 +232,25 @@ emulator::execute_op()
         } break;
         case 8:
         {
-            if ((opcode & 0xF) == 0)
+            uint8_t cmd = (opcode & 0xF);
+            if (cmd == 0)
             {
                 uint8_t reg_x = (opcode & 0x0F00) >> 8;
                 uint8_t reg_y = (opcode & 0x00F0) >> 4;
                 vx[reg_x] = vx[reg_y];
             }
-            else if ((opcode & 0xF) == 2)
+            else if (cmd == 2)
             {
                 uint8_t reg_x = (opcode & 0x0F00) >> 8;
                 uint8_t reg_y = (opcode & 0x00F0) >> 4;
                 vx[reg_x] = vx[reg_x] & vx[reg_y];
             }
-            else if ((opcode & 0xF) == 4)
+            else if (cmd == 4)
             {
                 uint8_t reg_x = (opcode & 0x0F00) >> 8;
                 uint8_t reg_y = (opcode & 0x00F0) >> 4;
                 uint16_t sum = vx[reg_x] + vx[reg_y];
-                vx[reg_x] = (sum & 0xFF);
+                vx[reg_x] = vx[reg_x] + vx[reg_y];
                 
                 if (sum > 0xFF)
                 {
@@ -255,7 +261,7 @@ emulator::execute_op()
                     vx[15] = 0;
                 }
             }
-            else if ((opcode & 0xF) == 5)
+            else if (cmd == 5)
             {
                 uint8_t reg_x = (opcode & 0x0F00) >> 8;
                 uint8_t reg_y = (opcode & 0x00F0) >> 4;
@@ -381,19 +387,24 @@ emulator::execute_op()
             {
                 uint8_t val = vx[reg];
                 mem[ix] = val / 100;
-                val -= (val / 100);
+                val = val % 100;
                 mem[ix + 1] = val / 10;
-                val -= (val / 10);
+                val = val % 10;
                 mem[ix + 2] = val;
+            }
+            else if ((opcode & 0xFF) == 0x55)
+            {
+                for (int i = 0; i <= reg; i++)
+                {
+                    mem[ix + i] = vx[i];
+                }
             }
             else if ((opcode & 0xFF) == 0x65)
             {
-                uint16_t mem_loc = ix;
-                for (int i = 0; i < reg; i++)
+                for (int i = 0; i <= reg; i++)
                 {
-                    vx[i] = mem[mem_loc++]; 
+                    vx[i] = mem[ix + i]; 
                 }
-                ix = mem_loc;
             }
             else
             {

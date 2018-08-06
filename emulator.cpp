@@ -45,6 +45,8 @@ emulator::emulator()
     waiting_for_input = false;
     input_slot = 0;
 
+    count = 0;
+
     // Load fonts into memory
     for (int i = 0; i < 80; i++)
     {
@@ -85,6 +87,14 @@ emulator::cycle()
         draw_flag = false;
         fetch_opcode();
         execute_op();
+
+        count++;
+
+        if (count == 10)
+        {
+            tick_timers();
+            count = 0;
+        }
     }
 }
 

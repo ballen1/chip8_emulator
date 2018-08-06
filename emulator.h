@@ -52,6 +52,7 @@ private:
     bool draw_flag;
     bool waiting_for_input;
     uint8_t input_slot;
+    int count = 0;
 
     bool error;
 
